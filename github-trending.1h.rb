@@ -14,6 +14,9 @@ require 'open-uri'
 require 'json'
 require 'nokogiri'
 
+# If all languages is preferred, set LANG to empty string
+# LANG = ''
+#
 LANG = 'swift'.freeze # your favorite language
 # LANG = 'java'.freeze
 
@@ -28,12 +31,12 @@ end
 
 hash = {}
 
-puts LANG.capitalize
+puts 'GitHub Trending'
 puts '---'
 
 doc = Nokogiri::HTML.parse(html, nil, charset)
-doc.xpath('//li[@class="repo-list-item"]').each do |node|
-  node.xpath('./h3[@class="repo-list-name"]/a').attribute('href').value.each_line do |s|
+doc.xpath('//article[@class="Box-row"]').each do |node|
+  node.xpath('./h1[@class="h3 lh-condensed"]/a').attribute('href').value.each_line do |s|
     s.slice!(0)
     hash = { name: s, url: BASE_URL + s }
 
@@ -46,9 +49,18 @@ doc.xpath('//li[@class="repo-list-item"]').each do |node|
       exit
     end
 
+    # Put the programming language for this item above the name and details
+    puts node.xpath('./div[@class="f6 text-gray mt-2"]/span/span[@itemprop="programmingLanguage"]').text
+
     if code == '200'
       result = JSON.parse(res.read)
-      puts hash.fetch(:name) + ' ⭐️ Daily: ' + node.xpath('./p[@class="repo-list-meta"]').text.split("\n")[5].split(' ')[0] + ' - Total: ' + result.fetch('stargazers_count').to_s + '| sizes=14 href=' + hash.fetch(:url)
+
+      if node.xpath('./p').first.nil?
+        next
+      end
+
+      puts hash.fetch(:name) + ' ⭐️ Daily: ' + node.xpath('./p').first.text.split("\n")[0].strip + ' - Total: ' + result.fetch('stargazers_count').to_s + '| sizes=14 href=' + hash.fetch(:url)
+      puts '---'
     else
       puts "OMG!! #{code} #{message}"
     end
